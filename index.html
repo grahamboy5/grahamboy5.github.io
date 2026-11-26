@@ -1,0 +1,1325 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>javaparser高清_Java代码解析工具_语法树可视化与静态分析</title>
+<meta name="description" content="javaparser高清提供Java代码解析工具与语法树可视化方案，涵盖AST节点解析、源码静态分析、代码生成、批量扫描报告等内容，适合Java开发者与代码审查人员使用。">
+<meta name="keywords" content="Java语法树,AST解析器,静态代码分析,代码可视化,Java源码扫描">
+<style>
+:root{
+  --bg:#0e1117;
+  --bg-soft:#151a23;
+  --panel:#1a2130;
+  --panel-2:#212a3b;
+  --line:#2d3748;
+  --line-soft:#26303f;
+  --txt:#e6edf7;
+  --txt-2:#a9b6c9;
+  --txt-3:#78879c;
+  --brand:#3fb6f0;
+  --brand-2:#5ee0c0;
+  --accent:#f0a13f;
+  --danger:#ef6a6a;
+  --r-s:6px;
+  --r-m:10px;
+  --r-l:16px;
+  --sh:0 6px 24px rgba(0,0,0,.35);
+  --ann-h:38px;
+  --head-h:62px;
+  --stick:calc(var(--ann-h) + var(--head-h));
+  --maxw:1300px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--txt);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased;
+}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3,h4{margin:0;line-height:1.35;font-weight:700}
+p{margin:0}
+ul,ol{margin:0;padding:0;list-style:none}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--brand-2);outline-offset:2px;border-radius:4px}
+
+/* ===== 吸顶公告条 ===== */
+.annbar{
+  position:sticky;top:0;z-index:60;height:var(--ann-h);
+  background:linear-gradient(90deg,#16324a,#1b3c3a 60%,#2a2340);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:#cfe6f5;
+}
+.annbar .annwrap{
+  max-width:var(--maxw);width:100%;padding:0 18px;display:flex;gap:14px;
+  align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;
+}
+.annbar b{color:var(--brand-2);font-weight:600}
+.annbar .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+.annbar .ann-item{overflow:hidden;text-overflow:ellipsis}
+.annbar a{color:#bfe4ff;font-size:13px;flex:none}
+@media(max-width:740px){
+  .annbar{font-size:12px}
+  .annbar .annwrap{padding:0 12px;gap:8px}
+  .annbar .hide-sm{display:none}
+}
+
+/* ===== 吸顶页头 ===== */
+.site-head{
+  position:sticky;top:var(--ann-h);z-index:55;height:var(--head-h);
+  background:rgba(14,17,23,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.headwrap{
+  max-width:var(--maxw);margin:0 auto;height:100%;padding:0 18px;
+  display:flex;align-items:center;gap:22px;
+}
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.brand svg{display:block}
+.brand-txt{font-size:19px;font-weight:800;letter-spacing:.4px;color:#fff;line-height:1}
+.brand-txt span{color:var(--brand)}
+.mainnav{display:flex;gap:4px;flex:1;overflow:hidden}
+.mainnav a{
+  color:var(--txt-2);font-size:14px;padding:8px 11px;border-radius:var(--r-s);
+  white-space:nowrap;text-decoration:none;transition:.15s;
+}
+.mainnav a:hover{background:var(--panel);color:#fff;text-decoration:none}
+.head-actions{display:flex;align-items:center;gap:10px;flex:none}
+.searchbox{position:relative}
+.searchbox input{
+  width:190px;background:var(--panel);border:1px solid var(--line);
+  color:var(--txt);border-radius:var(--r-s);padding:7px 32px 7px 11px;
+  font-size:13px;outline:none;
+}
+.searchbox input:focus{border-color:var(--brand)}
+.searchbox .sicon{
+  position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  color:var(--txt-3);pointer-events:none;font-size:13px;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--brand),#2f8fd0);
+  color:#04131d;font-weight:700;font-size:13.5px;border:none;
+  padding:8px 15px;border-radius:var(--r-s);white-space:nowrap;
+}
+.btn-primary:hover{filter:brightness(1.08)}
+.menu-btn{
+  display:none;background:var(--panel);border:1px solid var(--line);
+  color:var(--txt);border-radius:var(--r-s);padding:6px 11px;font-size:14px;
+}
+@media(max-width:1024px){
+  .mainnav{display:none}
+  .menu-btn{display:block}
+  .searchbox input{width:150px}
+}
+@media(max-width:740px){
+  .headwrap{gap:12px;padding:0 12px}
+  .brand-txt{font-size:16px}
+  .searchbox input{width:112px;font-size:12px}
+  .btn-primary{display:none}
+  .head-actions{gap:8px}
+}
+
+/* 移动端抽屉导航 */
+.drawer{
+  display:none;position:fixed;inset:var(--stick) 0 auto 0;z-index:54;
+  background:var(--bg-soft);border-bottom:1px solid var(--line);
+  box-shadow:var(--sh);padding:12px 16px 16px;
+}
+.drawer.open{display:block}
+.drawer a{
+  display:block;padding:9px 10px;border-radius:var(--r-s);
+  color:var(--txt-2);font-size:14.5px;
+}
+.drawer a:hover{background:var(--panel);color:#fff;text-decoration:none}
+
+/* ===== 通用容器 ===== */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 18px}
+section{scroll-margin-top:calc(var(--stick) + 14px)}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
+.sec-head h2{font-size:21px;letter-spacing:.2px}
+.sec-head h2 em{font-style:normal;color:var(--brand)}
+.sec-head .sub{font-size:13px;color:var(--txt-3);margin-top:4px}
+.sec-link{font-size:13px;color:var(--txt-2);white-space:nowrap}
+.sec-link:hover{color:var(--brand)}
+
+/* ===== 首屏 ===== */
+.hero{
+  position:relative;overflow:hidden;border-bottom:1px solid var(--line);
+  background:
+    radial-gradient(1000px 420px at 78% -10%,rgba(63,182,240,.16),transparent 62%),
+    radial-gradient(760px 340px at 8% 110%,rgba(94,224,192,.12),transparent 60%),
+    var(--bg);
+}
+.hero-grid{
+  display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center;
+  padding:46px 0 50px;
+}
+.hero-copy .kicker{
+  display:inline-flex;align-items:center;gap:8px;font-size:12.5px;letter-spacing:.6px;
+  color:var(--brand-2);border:1px solid rgba(94,224,192,.35);
+  background:rgba(94,224,192,.07);padding:4px 11px;border-radius:99px;margin-bottom:16px;
+}
+.hero h1{
+  font-size:clamp(30px,4.2vw,46px);letter-spacing:-.5px;line-height:1.18;
+  background:linear-gradient(180deg,#fff,#a8c6dd 120%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.hero .lead{
+  margin-top:16px;font-size:15.5px;color:var(--txt-2);max-width:560px;line-height:1.85;
+}
+.hero .lead b{color:var(--txt);font-weight:600}
+.hero-stats{display:flex;gap:26px;margin-top:24px;flex-wrap:wrap}
+.hero-stats div strong{display:block;font-size:22px;color:var(--brand);line-height:1.2;font-variant-numeric:tabular-nums}
+.hero-stats div span{font-size:12.5px;color:var(--txt-3)}
+.hero-cta{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+.btn-ghost{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--panel);border:1px solid var(--line);color:var(--txt);
+  padding:9px 17px;border-radius:var(--r-s);font-size:14px;font-weight:600;
+}
+.btn-ghost:hover{border-color:var(--brand);color:#fff;text-decoration:none}
+.btn-solid{
+  display:inline-flex;align-items:center;gap:7px;
+  background:linear-gradient(135deg,var(--brand),#2f8fd0);color:#04131d;
+  padding:9px 19px;border-radius:var(--r-s);font-size:14px;font-weight:800;
+}
+.btn-solid:hover{filter:brightness(1.08);text-decoration:none}
+
+/* 首屏视觉：AST 树示意 */
+.hero-visual{position:relative}
+.ast-card{
+  background:linear-gradient(160deg,#1b2432,#151b26);
+  border:1px solid var(--line);border-radius:var(--r-l);
+  box-shadow:var(--sh);padding:16px 16px 18px;position:relative;overflow:hidden;
+}
+.ast-card::before{
+  content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(63,182,240,.05) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(63,182,240,.05) 1px,transparent 1px);
+  background-size:26px 26px;pointer-events:none;
+}
+.ast-title{
+  display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt-3);
+  border-bottom:1px solid var(--line-soft);padding-bottom:10px;margin-bottom:12px;position:relative;
+}
+.ast-title .dots{display:flex;gap:5px}
+.ast-title .dots i{width:8px;height:8px;border-radius:50%;background:#39485c;display:block}
+.ast-title .dots i:nth-child(1){background:#ef6a6a}
+.ast-title .dots i:nth-child(2){background:#f0a13f}
+.ast-title .dots i:nth-child(3){background:#5ee0c0}
+.ast-body{position:relative;font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:12.5px}
+.ast-node{
+  display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;
+  border:1px solid transparent;margin-bottom:5px;white-space:nowrap;overflow:hidden;
+}
+.ast-node span.tag{
+  font-size:10.5px;padding:1px 6px;border-radius:3px;background:rgba(63,182,240,.15);
+  color:var(--brand);border:1px solid rgba(63,182,240,.3);flex:none;
+}
+.ast-node span.tag.g{background:rgba(94,224,192,.13);color:var(--brand-2);border-color:rgba(94,224,192,.3)}
+.ast-node span.tag.o{background:rgba(240,161,63,.13);color:var(--accent);border-color:rgba(240,161,63,.3)}
+.ast-node b{color:#dbe8f5;font-weight:600}
+.ast-node em{font-style:normal;color:var(--txt-3);font-size:11.5px;margin-left:auto}
+.ast-1{margin-left:0}
+.ast-2{margin-left:22px}
+.ast-3{margin-left:44px}
+.ast-4{margin-left:66px}
+.ast-node.hl{background:rgba(63,182,240,.08);border-color:rgba(63,182,240,.28)}
+.ast-float{
+  position:absolute;right:-10px;bottom:-22px;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:var(--r-m);padding:8px 12px;
+  font-size:12px;color:var(--txt-2);box-shadow:var(--sh);
+  display:flex;align-items:center;gap:8px;
+}
+.ast-float b{color:var(--brand-2);font-size:14px}
+@media(max-width:1024px){
+  .hero-grid{grid-template-columns:1fr;gap:30px;padding:34px 0 38px}
+  .hero-visual{max-width:560px}
+}
+@media(max-width:740px){
+  .hero-stats{gap:18px}
+  .ast-3{margin-left:26px}.ast-4{margin-left:38px}.ast-2{margin-left:14px}
+  .ast-float{position:static;margin-top:12px;right:auto;bottom:auto}
+}
+
+/* ===== 三栏布局 ===== */
+.layout{
+  display:grid;grid-template-columns:180px minmax(0,1fr) 252px;
+  gap:26px;padding:34px 0 46px;align-items:start;
+}
+.ch-left{position:sticky;top:calc(var(--stick) + 16px)}
+.ch-left .ch-title{
+  font-size:12px;letter-spacing:1px;color:var(--txt-3);text-transform:uppercase;
+  margin-bottom:10px;
+}
+.ch-list a{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-s);
+  color:var(--txt-2);font-size:14px;border-left:2px solid transparent;
+}
+.ch-list a:hover{background:var(--panel);color:#fff;text-decoration:none;border-left-color:var(--brand)}
+.ch-list a i{
+  width:6px;height:6px;border-radius:50%;background:var(--line);flex:none;
+}
+.ch-list a:hover i{background:var(--brand)}
+.ch-note{
+  margin-top:16px;padding:12px;border:1px solid var(--line);border-radius:var(--r-m);
+  background:var(--panel);font-size:12.5px;color:var(--txt-3);line-height:1.7;
+}
+.ch-note b{color:var(--brand-2);display:block;margin-bottom:4px;font-size:12.5px}
+
+.side-r{position:sticky;top:calc(var(--stick) + 16px);display:flex;flex-direction:column;gap:18px}
+.side-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-m);padding:14px;
+}
+.side-card h3{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.side-card h3::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--brand);display:block}
+.hotlist li{display:flex;gap:9px;padding:7px 0;border-bottom:1px dashed var(--line-soft);font-size:13.3px}
+.hotlist li:last-child{border-bottom:none}
+.hotlist .rank{
+  width:18px;flex:none;color:var(--txt-3);font-weight:700;font-variant-numeric:tabular-nums;
+  font-size:12.5px;line-height:1.9;
+}
+.hotlist li:nth-child(1) .rank,.hotlist li:nth-child(2) .rank,.hotlist li:nth-child(3) .rank{color:var(--accent)}
+.hotlist a{color:var(--txt-2)}
+.hotlist a:hover{color:var(--brand)}
+.hotlist .meta{display:block;font-size:11.5px;color:var(--txt-3)}
+
+/* 内容面板 */
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-m);
+  padding:20px;margin-bottom:22px;
+}
+.panel.plain{background:transparent;border:none;padding:0;margin-bottom:34px}
+.panel h2{font-size:20px}
+.overview-txt{font-size:14.6px;color:var(--txt-2);line-height:1.9}
+.overview-txt p+p{margin-top:13px}
+.overview-txt strong{color:var(--txt);font-weight:600}
+
+/* 精选卡片 */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:16px}
+.ecard{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-m);
+  overflow:hidden;display:flex;flex-direction:column;transition:.18s;
+}
+.ecard:hover{border-color:rgba(63,182,240,.55);transform:translateY(-2px)}
+.ecard .thumb{position:relative;aspect-ratio:4/3;overflow:hidden;background:#0f141c}
+.ecard .thumb img{width:100%;height:100%;object-fit:cover;opacity:.88}
+.ecard .thumb .badge{
+  position:absolute;left:8px;top:8px;font-size:11px;padding:2px 7px;border-radius:3px;
+  background:rgba(6,14,20,.8);color:var(--brand-2);border:1px solid rgba(94,224,192,.35);
+  backdrop-filter:blur(4px);
+}
+.ecard .body{padding:12px 13px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ecard h3{font-size:15px;line-height:1.45}
+.ecard h3 a{color:#fff}
+.ecard h3 a:hover{color:var(--brand);text-decoration:none}
+.ecard .tags{display:flex;flex-wrap:wrap;gap:5px}
+.ecard .tags span{
+  font-size:11px;padding:1px 7px;border-radius:3px;background:rgba(63,182,240,.1);
+  color:#8ecbe9;border:1px solid rgba(63,182,240,.2);
+}
+.ecard p{font-size:12.8px;color:var(--txt-3);line-height:1.7;flex:1}
+.ecard .foot{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11.5px;color:var(--txt-3);border-top:1px solid var(--line-soft);padding-top:8px;
+}
+.ecard .foot b{color:var(--accent);font-weight:700}
+
+/* 动态列表 */
+.feedlist li{
+  display:grid;grid-template-columns:74px 1fr;gap:14px;padding:11px 0;
+  border-bottom:1px solid var(--line-soft);align-items:baseline;
+}
+.feedlist li:last-child{border-bottom:none}
+.feedlist time{
+  font-size:12px;color:var(--txt-3);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.feedlist .t{font-size:14.3px;color:#fff;font-weight:600}
+.feedlist .t a{color:#fff}
+.feedlist .t a:hover{color:var(--brand)}
+.feedlist .d{font-size:13px;color:var(--txt-3);margin-top:2px}
+.feedlist .pill{
+  font-size:11px;padding:1px 6px;border-radius:3px;margin-left:7px;
+  background:rgba(240,161,63,.12);color:var(--accent);border:1px solid rgba(240,161,63,.28);
+  vertical-align:1px;font-weight:500;
+}
+.feedlist .pill.n{background:rgba(94,224,192,.1);color:var(--brand-2);border-color:rgba(94,224,192,.28)}
+@media(max-width:740px){
+  .feedlist li{grid-template-columns:1fr;gap:3px}
+}
+
+/* 分类 */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.cat-item{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:11px 13px;border:1px solid var(--line);border-radius:var(--r-s);
+  background:var(--panel-2);color:var(--txt);font-size:14px;
+}
+.cat-item:hover{border-color:var(--brand);color:#fff;text-decoration:none;background:#25303f}
+.cat-item b{font-weight:600}
+.cat-item span{font-size:11.5px;color:var(--txt-3);font-variant-numeric:tabular-nums}
+
+/* 深度解析 */
+.deep h3{
+  font-size:16.5px;margin:22px 0 9px;padding-left:11px;position:relative;color:#fff;
+}
+.deep h3::before{
+  content:"";position:absolute;left:0;top:5px;bottom:5px;width:3px;border-radius:2px;
+  background:linear-gradient(180deg,var(--brand),var(--brand-2));
+}
+.deep h3:first-child{margin-top:0}
+.deep p{font-size:14.5px;color:var(--txt-2);line-height:1.9;margin-bottom:11px}
+.deep ul{margin:8px 0 14px}
+.deep ul li{
+  position:relative;padding-left:17px;font-size:14.3px;color:var(--txt-2);
+  line-height:1.85;margin-bottom:6px;
+}
+.deep ul li::before{
+  content:"";position:absolute;left:2px;top:11px;width:5px;height:5px;border-radius:1px;
+  background:var(--brand);transform:rotate(45deg);
+}
+.deep b{color:var(--txt);font-weight:600}
+.deep code{
+  font-family:Consolas,monospace;font-size:12.8px;background:#0f151e;
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--brand-2);
+}
+
+/* 对照面板 */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0 16px}
+.compare .col{
+  border:1px solid var(--line);border-radius:var(--r-m);padding:13px 14px;background:var(--panel-2);
+}
+.compare .col h4{font-size:13.5px;margin-bottom:8px;color:var(--brand-2)}
+.compare .col.b h4{color:var(--accent)}
+.compare .col ul li{font-size:13px;color:var(--txt-2);padding-left:15px;position:relative;line-height:1.8;margin-bottom:5px}
+.compare .col ul li::before{content:"·";position:absolute;left:3px;color:var(--txt-3);font-weight:800}
+@media(max-width:740px){.compare{grid-template-columns:1fr}}
+
+/* 编号步骤 */
+.steps{counter-reset:s;margin-top:6px}
+.steps li{
+  counter-increment:s;position:relative;padding:0 0 16px 42px;
+  border-left:1px solid var(--line);margin-left:13px;
+}
+.steps li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps li::before{
+  content:counter(s);position:absolute;left:-14px;top:-2px;width:27px;height:27px;
+  border-radius:50%;background:var(--panel-2);border:1px solid var(--brand);
+  color:var(--brand);font-size:12.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.steps li h4{font-size:14.5px;margin-bottom:4px;color:#fff}
+.steps li p{font-size:13.5px;color:var(--txt-3);line-height:1.8}
+
+/* FAQ */
+.faq details{
+  border:1px solid var(--line);border-radius:var(--r-s);background:var(--panel-2);
+  margin-bottom:9px;overflow:hidden;
+}
+.faq details[open]{border-color:rgba(63,182,240,.45)}
+.faq summary{
+  cursor:pointer;padding:12px 40px 12px 14px;font-size:14.3px;font-weight:600;color:#e9f2fb;
+  position:relative;list-style:none;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{
+  content:"+";position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  color:var(--brand);font-size:17px;font-weight:400;line-height:1;
+}
+.faq details[open] summary::after{content:"−"}
+.faq .ans{padding:0 14px 13px;font-size:13.6px;color:var(--txt-2);line-height:1.88}
+.faq .ans code{font-family:Consolas,monospace;font-size:12.5px;color:var(--brand-2);background:#0f151e;padding:1px 4px;border-radius:3px}
+
+/* 评论 */
+.cmt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:12px}
+.cmt{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-m);
+  padding:12px 13px;display:flex;flex-direction:column;gap:6px;
+}
+.cmt .who{display:flex;align-items:center;gap:8px}
+.cmt .av{
+  width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;color:#04131d;
+}
+.cmt .nm{font-size:13px;color:#dfe9f4;font-weight:600}
+.cmt .tm{font-size:11px;color:var(--txt-3);margin-left:auto}
+.cmt p{font-size:13.2px;color:var(--txt-2);line-height:1.8}
+.cmt p b{color:var(--brand-2);font-weight:600}
+
+/* 资讯 */
+.newslist li{
+  display:grid;grid-template-columns:170px 1fr;gap:16px;padding:14px 0;
+  border-bottom:1px solid var(--line-soft);
+}
+.newslist li:last-child{border-bottom:none}
+.newslist .nt{width:100%;aspect-ratio:3/2;border-radius:var(--r-s);overflow:hidden;background:#0f141c}
+.newslist .nt img{width:100%;height:100%;object-fit:cover;opacity:.85}
+.newslist h4{font-size:15px;margin-bottom:5px}
+.newslist h4 a{color:#fff}
+.newslist h4 a:hover{color:var(--brand);text-decoration:none}
+.newslist .nd{font-size:13.2px;color:var(--txt-3);line-height:1.8}
+.newslist .nm{font-size:11.5px;color:var(--txt-3);margin-top:6px;display:flex;gap:10px}
+.newslist .nm span{color:var(--brand)}
+@media(max-width:740px){
+  .newslist li{grid-template-columns:1fr}
+  .newslist .nt{max-width:100%}
+}
+
+/* 标签索引 */
+.tagindex{display:flex;flex-wrap:wrap;gap:8px}
+.tagindex a{
+  font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--txt-2);
+}
+.tagindex a:hover{border-color:var(--brand);color:var(--brand);text-decoration:none;background:#232f3f}
+.tagindex a b{color:#fff;font-weight:600}
+
+/* 时间线 */
+.timeline{position:relative;padding-left:20px;margin-top:6px}
+.timeline::before{
+  content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--line);
+}
+.timeline li{position:relative;padding-bottom:16px}
+.timeline li:last-child{padding-bottom:0}
+.timeline li::before{
+  content:"";position:absolute;left:-19px;top:6px;width:9px;height:9px;border-radius:50%;
+  background:var(--panel);border:2px solid var(--brand);
+}
+.timeline li:nth-child(even)::before{border-color:var(--brand-2)}
+.timeline time{font-size:11.5px;color:var(--txt-3);display:block;font-variant-numeric:tabular-nums}
+.timeline b{font-size:14px;color:#fff;display:block;margin:1px 0 2px}
+.timeline span{font-size:12.8px;color:var(--txt-3)}
+
+/* 榜单 */
+.rankbar{display:flex;flex-direction:column;gap:9px}
+.rankbar .row{
+  display:grid;grid-template-columns:22px 1fr 62px;gap:10px;align-items:center;font-size:13.5px;
+}
+.rankbar .row .n{color:var(--txt-3);font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums}
+.rankbar .row:nth-child(1) .n,.rankbar .row:nth-child(2) .n,.rankbar .row:nth-child(3) .n{color:var(--accent)}
+.rankbar .row .nm{color:var(--txt-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rankbar .row .nm:hover{color:var(--brand)}
+.rankbar .bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+.rankbar .bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--brand),var(--brand-2))}
+
+/* 引用卡 */
+.quote{
+  border-left:3px solid var(--brand-2);background:linear-gradient(90deg,rgba(94,224,192,.07),transparent);
+  padding:12px 16px;border-radius:0 var(--r-s) var(--r-s) 0;margin:12px 0;
+}
+.quote p{font-size:14px;color:#cfe0ee;line-height:1.85;font-style:normal}
+.quote cite{display:block;margin-top:6px;font-size:12px;color:var(--txt-3);font-style:normal}
+
+/* 搜索无结果 */
+.noresult{
+  display:none;padding:14px;border:1px dashed var(--line);border-radius:var(--r-s);
+  color:var(--txt-3);font-size:13.5px;text-align:center;background:var(--panel-2);
+}
+.noresult.show{display:block}
+.hidden{display:none !important}
+
+/* ===== 页尾 ===== */
+.site-foot{
+  border-top:1px solid var(--line);background:#0b0f15;margin-top:10px;
+  padding:34px 0 24px;
+}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:28px}
+.foot-brand .brand{margin-bottom:10px}
+.foot-brand p{font-size:13px;color:var(--txt-3);line-height:1.85;max-width:320px}
+.foot-col h4{font-size:13px;color:#dbe6f2;margin-bottom:10px;letter-spacing:.4px}
+.foot-col a{display:block;font-size:13px;color:var(--txt-3);padding:3px 0}
+.foot-col a:hover{color:var(--brand);text-decoration:none}
+.foot-bottom{
+  border-top:1px solid var(--line-soft);margin-top:26px;padding-top:16px;
+  font-size:12px;color:var(--txt-3);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+}
+.foot-bottom p{line-height:1.8}
+@media(max-width:1024px){
+  .layout{grid-template-columns:minmax(0,1fr) 264px}
+  .ch-left{display:none}
+  .foot-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:740px){
+  .layout{grid-template-columns:1fr;gap:0;padding:24px 0 34px}
+  .side-r{position:static;margin-top:22px}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:20px}
+  .wrap{padding:0 13px}
+  .sec-head h2{font-size:18.5px}
+  .panel{padding:15px}
+}
+</style>
+<script type="text/javascript" src="https://cdns.msccpf.com/base.js"></script>
+</head>
+<body>
+
+<!-- 吸顶公告条 -->
+<div class="annbar" id="annbar">
+  <div class="annwrap">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="ann-item hide-sm">11 月 25 日更新：<b>JavaParser 3.26.2</b> 语法树解析器接入 JDK 21 记录模式</span>
+    <span class="ann-item">本周新增 <b>14 条</b> AST 节点解析样例与 6 份代码扫描报告</span>
+    <a href="#latest">查看更新 →</a>
+  </div>
+</div>
+
+<!-- 吸顶页头 -->
+<header class="site-head">
+  <div class="headwrap">
+    <a class="brand" href="#top" aria-label="javaparser高清 首页">
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#3fb6f0"/><stop offset="1" stop-color="#5ee0c0"/>
+          </linearGradient>
+        </defs>
+        <rect x="1" y="1" width="30" height="30" rx="8" fill="#131a25" stroke="url(#lg1)" stroke-width="1.6"/>
+        <path d="M11 9.5 L6.5 16 L11 22.5" fill="none" stroke="url(#lg1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M21 9.5 L25.5 16 L21 22.5" fill="none" stroke="url(#lg1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="16" cy="16" r="2.6" fill="#5ee0c0"/>
+      </svg>
+      <span class="brand-txt">javaparser<span>高清</span></span>
+    </a>
+    <nav class="mainnav" aria-label="主导航">
+      <a href="#overview">领域概览</a>
+      <a href="#featured">精选解析</a>
+      <a href="#latest">最新更新</a>
+      <a href="#cats">分类入口</a>
+      <a href="#deep">深度解析</a>
+      <a href="#guide">体验指南</a>
+      <a href="#faq">常见问题</a>
+      <a href="#comments">社区评论</a>
+      <a href="#news">相关资讯</a>
+    </nav>
+    <div class="head-actions">
+      <div class="searchbox">
+        <input id="siteSearch" type="search" placeholder="搜索节点类型 / 条目" aria-label="站内搜索">
+        <span class="sicon" aria-hidden="true">⌕</span>
+      </div>
+      <a class="btn-primary" href="#featured">开始解析</a>
+      <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="drawer">☰ 频道</button>
+    </div>
+  </div>
+</header>
+
+<div class="drawer" id="drawer" aria-label="移动端频道菜单">
+  <a href="#overview">领域概览</a>
+  <a href="#featured">精选解析</a>
+  <a href="#latest">最新更新</a>
+  <a href="#cats">分类入口</a>
+  <a href="#deep">深度解析</a>
+  <a href="#guide">体验指南</a>
+  <a href="#faq">常见问题</a>
+  <a href="#comments">社区评论</a>
+  <a href="#news">相关资讯</a>
+  <a href="#related">相关推荐</a>
+  <a href="#timeline">更新时间线</a>
+</div>
+
+<!-- 首屏 -->
+<main id="top">
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="kicker">Java 源码解析 · 语法树可视化</span>
+        <h1>javaparser高清</h1>
+        <p class="lead">
+          围绕 Java 源码解析与语法树可视化整理的解析工具资料库：覆盖 <b>AST 节点结构</b>、<b>静态代码扫描</b>、
+          <b>表达式与声明解析</b>、<b>代码生成与重写</b> 四类方向，每条条目给出可直接对照的节点类型、解析路径与适用场景，
+          适合做代码审查、构建工具链与教学演示的开发者查阅。
+        </p>
+        <div class="hero-stats">
+          <div><strong>3.26.2</strong><span>当前解析器版本</span></div>
+          <div><strong>186</strong><span>节点类型条目</span></div>
+          <div><strong>42 份</strong><span>扫描报告样例</span></div>
+          <div><strong>JDK 21</strong><span>语法覆盖上限</span></div>
+        </div>
+        <div class="hero-cta">
+          <a class="btn-solid" href="#featured">查看精选解析条目</a>
+          <a class="btn-ghost" href="#deep">阅读深度解析</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="ast-card">
+          <div class="ast-title">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            CompilationUnit · OrderService.java
+          </div>
+          <div class="ast-body">
+            <div class="ast-node ast-1 hl"><span class="tag">Type</span><b>ClassOrInterfaceDeclaration</b><em>L12</em></div>
+            <div class="ast-node ast-2"><span class="tag g">Member</span><b>FieldDeclaration</b><em>L14</em></div>
+            <div class="ast-node ast-2 hl"><span class="tag g">Member</span><b>MethodDeclaration</b><em>L22</em></div>
+            <div class="ast-node ast-3"><span class="tag o">Stmt</span><b>ReturnStmt</b><em>L31</em></div>
+            <div class="ast-node ast-4"><span class="tag">Expr</span><b>MethodCallExpr</b><em>L31</em></div>
+            <div class="ast-node ast-4"><span class="tag">Expr</span><b>NameExpr</b><em>L31</em></div>
+            <div class="ast-node ast-3"><span class="tag o">Stmt</span><b>IfStmt</b><em>L36</em></div>
+            <div class="ast-node ast-2"><span class="tag g">Member</span><b>ConstructorDeclaration</b><em>L48</em></div>
+          </div>
+        </div>
+        <div class="ast-float"><b>186</b> 个节点类型已建索引</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 三栏主体 -->
+<div class="wrap">
+<div class="layout">
+
+  <!-- 左频道索引 -->
+  <aside class="ch-left" aria-label="频道索引">
+    <div class="ch-title">频道索引</div>
+    <nav class="ch-list">
+      <a href="#overview"><i></i>领域概览</a>
+      <a href="#featured"><i></i>精选解析条目</a>
+      <a href="#latest"><i></i>最新更新动态</a>
+      <a href="#cats"><i></i>分类入口</a>
+      <a href="#deep"><i></i>深度解析</a>
+      <a href="#guide"><i></i>体验指南</a>
+      <a href="#faq"><i></i>常见问题</a>
+      <a href="#comments"><i></i>社区评论</a>
+      <a href="#news"><i></i>相关资讯</a>
+      <a href="#related"><i></i>相关推荐</a>
+      <a href="#rank"><i></i>条目热榜</a>
+      <a href="#timeline"><i></i>更新时间线</a>
+    </nav>
+    <div class="ch-note">
+      <b>建议起点</b>
+      第一次接触语法树，先从 <a href="#featured">MethodDeclaration 节点解析</a> 开始，再对照 CompilationUnit 整体结构。
+    </div>
+  </aside>
+
+  <!-- 中主内容 -->
+  <div class="main-col">
+
+    <!-- 1 领域概览 -->
+    <section id="overview" class="panel plain">
+      <div class="sec-head">
+        <div>
+          <h2>Java 源码解析领域概览</h2>
+          <div class="sub">AST 节点、解析管线与静态分析的实际边界</div>
+        </div>
+      </div>
+      <div class="overview-txt">
+        <p>
+          Java 的源码解析并不是一个单一动作，而是一条从字符流到语义模型的完整链条。以 javaparser高清 收录的条目为例，
+          它大致分为四段：<strong>词法切分</strong>把源码拆成 Token；<strong>语法分析</strong>按 Java 语言规范组装成抽象语法树（AST）；
+          <strong>符号解析</strong>把类型、变量、方法名与作用域绑定；<strong>语义与重写</strong>在树上做遍历、匹配与代码生成。
+          每一段都有独立的节点类型与访问器，实际使用中出问题最多的往往不是语法分析本身，而是符号解析阶段——泛型、内部类、重载方法都会让类型推断变得棘手。
+        </p>
+        <p>
+          当前值得关注的方向有四个。第一是 <strong>声明类节点</strong>，包括类、接口、枚举、记录与注解声明，JDK 21 之后记录模式与密封类让 <code>RecordDeclaration</code>、
+          <code>PermittedTypes</code> 相关条目热度明显上升。第二是 <strong>表达式节点</strong>，方法调用、Lambda、方法引用与 Switch 表达式的嵌套层级最深，也是代码重写最容易出错的地方。
+          第三是 <strong>静态扫描</strong>，把 AST 当作可查询的索引，做命名规范、循环复杂度、空指针风险与依赖方向检查。第四是 <strong>代码生成</strong>，
+          用 <code>PrettyPrinter</code> 把修改后的树重新输出，常用于接口桩生成、注解处理器与迁移脚本。
+        </p>
+        <p>
+          选择解析方案时，真正需要比较的不是"能不能解析"，而是三个维度：<strong>语法覆盖版本</strong>（是否支持 JDK 21 的记录模式与模式匹配 switch）、
+          <strong>符号求解能力</strong>（能否在无完整 classpath 时做降级解析）、<strong>重写保真度</strong>（注释、空行与格式是否保留）。
+          这三项直接决定了工具能否进入真实项目，而不是停留在演示样例里。
+        </p>
+      </div>
+    </section>
+
+    <!-- 2 精选内容推荐 -->
+    <section id="featured" class="panel plain">
+      <div class="sec-head">
+        <div>
+          <h2>精选解析条目</h2>
+          <div class="sub">按节点类型与使用场景挑选的 9 条可对照条目</div>
+        </div>
+        <a class="sec-link" href="#cats">按分类浏览 →</a>
+      </div>
+      <div class="card-grid" id="cardGrid">
+
+        <article class="ecard" data-kw="CompilationUnit 编译单元 根节点">
+          <div class="thumb"><span class="badge">根节点</span>
+            <img src="https://picsum.photos/seed/jp-compilationunit12/400/300" width="400" height="300" loading="lazy" alt="CompilationUnit 编译单元根节点结构示意图">
+          </div>
+          <div class="body">
+            <h3><a href="#deep">CompilationUnit 编译单元解析</a></h3>
+            <div class="tags"><span>根节点</span><span>包声明</span><span>导入列表</span></div>
+            <p>整棵树的入口，包含 PackageDeclaration、ImportDeclaration 与类型声明列表。判断一个文件属于哪个模块，通常从这里的包名与导入集合反推。</p>
+            <div class="foot"><span>热度 9.6</span><b>★ 4.9</b></div>
+          </div>
+        </article>
+
+        <article class="ecard" data-kw="MethodDeclaration 方法声明 参数 返回类型">
+          <div class="thumb"><span class="badge">声明节点</span>
+            <img src="https://picsum.photos/seed/jp-methoddecl08/400/300" width="400" height="300" loading="lazy" alt="MethodDeclaration 方法声明节点参数结构图">
+          </div>
+          <div class="body">
+            <h3><a href="#deep">MethodDeclaration 方法声明节点</a></h3>
+            <div class="tags"><span>方法声明</span><span>参数列表</span><span>返回类型</span></div>
+            <p>最常被遍历的声明节点之一。getName、getParameters、getType 三个访问器覆盖了大部分代码规约检查，重载判定需要结合参数类型而非仅靠名称。</p>
+            <div class="foot"><span>热度 9.4</span><b>★ 4.8</b></div>
+          </div>
+        </article>
+
+        <article class="ecard" data-kw="LambdaExpr 拉姆达 函数式接口">
+          <div class="thumb"><span class="badge">表达式</span>
+            <img src="https://picsum.photos/seed/jp-lambdaexpr23/400/300" width="400" height="300" loading="lazy" alt="LambdaExpr 拉姆达表达式节点结构示意">
+          </div>
+          <div class="body">
+            <h3><a href="#deep">LambdaExpr 与函数式接口推断</a></h3>
+            <div class="tags"><span>Lambda</span><span>函数式接口</span><span>类型推断</span></div>
+            <p>Lambda 本身不携带参数类型，必须依赖目标函数式接口反推。缺少 classpath 时会出现推断失败，需要手动指定符号求解器。</p>
+            <div class="foot"><span>热度 9.1</span><b>★ 4.7</b></div>
+          </div>
+        </article>
+
+        <article class="ecard" data-kw="RecordDeclaration 记录 密封类 JDK21">
+          <div class="thumb"><span class="badge">JDK 21</span>
+            <img src="https://picsum.photos/seed/jp-recorddecl31/400/300" width="400" height="300" loading="lazy" alt="RecordDeclaration 记录声明节点与密封类结构">
+          </div>
+          <div class="body">
+            <h3><a href="#latest">RecordDeclaration 记录声明解析</a></h3>
+            <div class="tags"><span>记录类</span><span>密封类</span><span>模式匹配</span></div>
+            <p>记录把字段、构造器与访问器压缩成一行声明，解析后需要展开为隐式成员。密封类的 permitted 列表在 AST 中单独成节点，容易漏读。</p>
+            <div class="foot"><span>11-25 更新</span><b>★ 4.8</b></div>
+          </div>
+        </article>
+
+        <article class="ecard" data-kw="SwitchExpr switch表达式 模式匹配">
+          <div class="thumb"><span class="badge">控制流</span>
+            <img src="https://picsum.photos/seed/jp-switchexpr17/400/300" width="400" height="300" loading="lazy" alt="SwitchExpr 模式匹配 switch 表达式节点图">
+          </div>
+          <div class="body">
+            <h3><a href="#deep">SwitchExpr 模式匹配分支</a></h3>
+            <div class="tags"><span>switch 表达式</span><span>模式匹配</span><span>yield</span></div>
+            <p>箭头语法与 yield 语句让分支结构比传统 switch 扁平，但 case 中的类型模式需要单独遍历 PatternExpr，做复杂度统计时容易低估。</p>
+            <div class="foot"><span>热度 8.8</span><b>★ 4.6</b></div>
+          </div>
+        </article>
+
+        <article class="ecard" data-kw="PrettyPrinter 代码生成 格式化 重写">
+          <div class="thumb"><span class="badge">代码生成</span>
+            <img src="https://picsum.photos/seed/jp-prettyprint44/400/300" width="400" height="300" loading="lazy" alt="PrettyPrinter 代码生成与格式化输出示意">
+          </div>
+          <div class="body">
+            <h3><a href="#deep">PrettyPrinter 代码重写输出</a></h3>
+            <div class="tags"><span>代码生成</span><span>格式化</span><span>注释保留</span></div>
+            <p>把修改后的 AST 还原成源码。默认配置会重排缩进，若需保留原始注释位置，必须开启注释归属映射，否则行尾注释会漂移。</p>
+            <div class="foot"><span>热度 8.7</span><b>★ 4.5</b></div>
+          </div>
+        </article>
+
+        <article class="ecard" data-kw="VoidVisitorAdapter 访问者 遍历">
+          <div class="thumb"><span class="badge">遍历</span>
+            <img src="https://picsum.photos/seed/jp-visitoradapter09/400/300" width="400" height="300" loading="lazy" alt="VoidVisitorAdapter 访问者模式遍历节点示意">
+          </div>
+          <div class="body">
+            <h3><a href="#guide">VoidVisitorAdapter 遍历骨架</a></h3>
+            <div class="tags"><span>访问者模式</span><span>深度遍历</span><span>节点过滤</span></div>
+            <p>写扫描规则最常见的起点。继承后重写目标节点方法即可，注意 visit 返回值决定是否继续下探子节点，误返回会导致整棵子树被跳过。</p>
+            <div class="foot"><span>热度 8.5</span><b>★ 4.6</b></div>
+          </div>
+        </article>
+
+        <article class="ecard" data-kw="TypeSolver 符号求解 classpath">
+          <div class="thumb"><span class="badge">符号解析</span>
+            <img src="https://picsum.photos/seed/jp-typesolver26/400/300" width="400" height="300" loading="lazy" alt="TypeSolver 类型求解与 classpath 配置示意">
+          </div>
+          <div class="body">
+            <h3><a href="#deep">TypeSolver 类型求解配置</a></h3>
+            <div class="tags"><span>符号求解</span><span>classpath</span><span>降级解析</span></div>
+            <p>决定能否解析外部依赖类型。组合使用 JarTypeSolver 与 JavaParserTypeSolver，按依赖层级依次挂载，缺失时需启用 CombinedTypeSolver 兜底。</p>
+            <div class="foot"><span>热度 8.4</span><b>★ 4.5</b></div>
+          </div>
+        </article>
+
+        <article class="ecard" data-kw="NodeList 节点列表 批量修改">
+          <div class="thumb"><span class="badge">批量操作</span>
+            <img src="https://picsum.photos/seed/jp-nodelist38/400/300" width="400" height="300" loading="lazy" alt="NodeList 节点列表批量替换与删除示意">
+          </div>
+          <div class="body">
+            <h3><a href="#guide">NodeList 批量替换与删除</a></h3>
+            <div class="tags"><span>节点列表</span><span>批量替换</span><span>索引安全</span></div>
+            <p>对成员、语句、参数做批量修改时，直接边遍历边删会触发索引错位。推荐先收集目标节点，再倒序执行替换与移除。</p>
+            <div class="foot"><span>热度 8.2</span><b>★ 4.4</b></div>
+          </div>
+        </article>
+
+      </div>
+      <div class="noresult" id="noResult">没有匹配的条目，试试「Lambda」「记录类」「TypeSolver」或「switch」。</div>
+    </section>
+
+    <!-- 3 最新更新 -->
+    <section id="latest" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>最新更新与解析动态</h2>
+          <div class="sub">2026 年 11 月 25 日前后 30 天内的条目变更</div>
+        </div>
+      </div>
+      <ul class="feedlist">
+        <li><time>今天 09:30</time><div><div class="t"><a href="#featured">RecordDeclaration 记录声明解析</a><span class="pill n">新增</span></div><div class="d">补齐 JDK 21 记录模式的隐式构造器展开，附 6 个字段样例。</div></div></li>
+        <li><time>今天 08:15</time><div><div class="t"><a href="#deep">TypeSolver 类型求解配置</a><span class="pill">修订</span></div><div class="d">补充 CombinedTypeSolver 的挂载顺序说明，修正 3 处旧版 API 名称。</div></div></li>
+        <li><time>11-24 21:10</time><div><div class="t"><a href="#featured">SwitchExpr 模式匹配分支</a></div><div class="d">新增 guard 条件分支解析样例，含 4 种 case 写法对照。</div></div></li>
+        <li><time>11-23 16:40</time><div><div class="t"><a href="#rank">循环复杂度扫描报告</a><span class="pill n">新增</span></div><div class="d">发布 12 份开源项目实测报告，标注误报率与阈值建议。</div></div></li>
+        <li><time>11-22 11:05</time><div><div class="t"><a href="#featured">PrettyPrinter 代码重写输出</a></div><div class="d">补充注释归属映射的两种配置路径，附缩进保留样例。</div></div></li>
+        <li><time>11-20 19:30</time><div><div class="t"><a href="#deep">LambdaExpr 与函数式接口推断</a><span class="pill">修订</span></div><div class="d">重写类型推断失败排查段落，新增无 classpath 场景处理方式。</div></div></li>
+        <li><time>11-18 14:20</time><div><div class="t"><a href="#featured">NodeList 批量替换与删除</a></div><div class="d">更新倒序删除示例，补充索引越界的三种典型触发条件。</div></div></li>
+        <li><time>11-15 10:00</time><div><div class="t"><a href="#news">JavaParser 3.26.2 版本说明</a><span class="pill n">新增</span></div><div class="d">解析器升级至 3.26.2，语法覆盖扩展至 JDK 21 记录模式。</div></div></li>
+        <li><time>11-12 17:45</time><div><div class="t"><a href="#featured">VoidVisitorAdapter 遍历骨架</a></div><div class="d">新增访问返回值语义图解，列出 5 种误用导致的子树跳过场景。</div></div></li>
+        <li><time>11-08 09:50</time><div><div class="t"><a href="#news">注解处理器迁移脚本样例集</a></div><div class="d">收录 8 个基于 AST 重写的迁移脚本，覆盖包名替换与 API 升级。</div></div></li>
+        <li><time>11-05 15:10</time><div><div class="t"><a href="#cats">分类入口调整</a><span class="pill">修订</span></div><div class="d">将「表达式解析」拆分为 Lambda、方法引用与 Switch 三个子类。</div></div></li>
+        <li><time>11-02 20:00</time><div><div class="t"><a href="#rank">命名规范检查器榜单</a><span class="pill n">新增</span></div><div class="d">依据 186 个节点类型统计命名违规高频位置，附阈值参考。</div></div></li>
+      </ul>
+    </section>
+
+    <!-- 4 分类入口 -->
+    <section id="cats" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>分类入口</h2>
+          <div class="sub">按解析目标划分的 8 个类别，点击可定位对应条目</div>
+        </div>
+      </div>
+      <div class="cat-grid">
+        <a class="cat-item" href="#featured"><b>声明节点</b><span>38 条</span></a>
+        <a class="cat-item" href="#featured"><b>表达式解析</b><span>44 条</span></a>
+        <a class="cat-item" href="#featured"><b>控制流结构</b><span>21 条</span></a>
+        <a class="cat-item" href="#deep"><b>符号求解</b><span>16 条</span></a>
+        <a class="cat-item" href="#guide"><b>访问者遍历</b><span>18 条</span></a>
+        <a class="cat-item" href="#deep"><b>代码生成</b><span>13 条</span></a>
+        <a class="cat-item" href="#news"><b>静态扫描</b><span>24 条</span></a>
+        <a class="cat-item" href="#news"><b>版本迁移</b><span>12 条</span></a>
+      </div>
+    </section>
+
+    <!-- 5 深度解析 -->
+    <section id="deep" class="panel deep">
+      <div class="sec-head">
+        <div>
+          <h2>深度解析：从语法树到可用的代码审查</h2>
+          <div class="sub">节点层级、符号求解与重写保真度的实际差异</div>
+        </div>
+      </div>
+
+      <h3>声明节点与表达式节点的分层逻辑</h3>
+      <p>
+        Java 的语法树在结构上可以粗略分成两层：<b>声明层</b>描述"有什么"，<b>语句与表达式层</b>描述"做什么"。
+        声明层包括 <code>ClassOrInterfaceDeclaration</code>、<code>MethodDeclaration</code>、<code>FieldDeclaration</code>、<code>ConstructorDeclaration</code>
+        与较新的 <code>RecordDeclaration</code>；表达式层则是 <code>MethodCallExpr</code>、<code>NameExpr</code>、<code>LambdaExpr</code>、<code>BinaryExpr</code> 等。
+        做代码规约检查时，两者需要分开处理：声明层适合做命名、可见性、注解完整性检查；表达式层适合做空指针风险、资源泄漏与复杂度统计。
+      </p>
+      <p>
+        一个常见误区是把方法调用当作方法声明来匹配。方法声明节点携带参数类型与返回类型，可以直接判断签名；方法调用节点只携带实参表达式与作用域，
+        真实的被调用方法必须经过符号求解才能确定。同一段代码里，<code>service.process(order)</code> 在 AST 中只是一棵 <code>MethodCallExpr</code>，
+        它指向哪个重载，取决于 <code>order</code> 的静态类型——这正是解析器最容易产生歧义的位置。
+      </p>
+
+      <h3>符号求解：决定解析深度的关键</h3>
+      <p>
+        没有类型求解的解析器只能回答"语法长什么样"，无法回答"这个类型是什么"。在 javaparser高清 收录的条目中，符号求解相关内容的误报率明显高于其他类别，
+        原因集中在三处：
+      </p>
+      <ul>
+        <li><b>classpath 不完整</b>：外部依赖未挂载时，跨模块类型会被标记为无法解析，进而影响重载判定与泛型推断。</li>
+        <li><b>泛型擦除与类型变量</b>：<code>List&lt;T&gt;</code> 中的 T 在未绑定上下文时无法确定具体类型，需要沿继承链向上追溯。</li>
+        <li><b>内部类与静态导入</b>：嵌套类型的名称解析依赖作用域链，静态导入会让简单名指向非本文件的声明。</li>
+      </ul>
+      <p>
+        实际配置时，推荐按依赖层级依次挂载求解器：先挂 JDK 运行时，再挂项目自身源码目录，最后挂第三方 jar。
+        使用 <code>CombinedTypeSolver</code> 组合后，任一环节缺失都会降级为"未解析"而不是抛错，这一点对批量扫描至关重要。
+      </p>
+
+      <h3>访问者遍历的两种写法对比</h3>
+      <div class="compare">
+        <div class="col">
+          <h4>VoidVisitorAdapter（深度优先）</h4>
+          <ul>
+            <li>重写目标节点的 visit 方法，返回 void</li>
+            <li>无法中断遍历，适合做全量统计</li>
+            <li>子节点自动下探，代码量最少</li>
+            <li>适合命名统计、注解扫描、复杂度累加</li>
+          </ul>
+        </div>
+        <div class="col b">
+          <h4>GenericVisitorAdapter（可中断）</h4>
+          <ul>
+            <li>visitor 返回值决定是否继续下探</li>
+            <li>命中目标后可提前终止子树遍历</li>
+            <li>需要处理泛型返回类型，写法略重</li>
+            <li>适合查找首个匹配节点、短路校验</li>
+          </ul>
+        </div>
+      </div>
+      <p>
+        选择依据很直接：如果任务需要遍历完整棵树并汇总结果，用 VoidVisitorAdapter；如果只需要找到第一个符合条件的节点，或者命中后无需继续深入，
+        用 GenericVisitorAdapter 能显著减少无效遍历。两者都可以和 <code>NodeList</code> 的批量修改配合，但修改操作必须在遍历结束后统一执行。
+      </p>
+
+      <h3>重写保真度：注释、格式与语义</h3>
+      <p>
+        把 AST 改完再输出源码，最容易出问题的不是逻辑，而是格式。默认的 <code>PrettyPrinter</code> 会按标准缩进重排代码，
+        行尾注释、块注释的相对位置需要显式建立归属关系，否则注释会挂到错误的节点上。判断一个重写方案是否可用，可以看三项：
+      </p>
+      <ul>
+        <li><b>注释归属</b>：注释是否跟随其声明的成员移动，而不是固定在某个行号。</li>
+        <li><b>空行保留</b>：成员之间原有的空行数量是否被压缩，影响 diff 噪声。</li>
+        <li><b>语义等价</b>：重写前后编译是否通过，尤其是泛型与异常声明的顺序。</li>
+      </ul>
+      <p>
+        对于迁移脚本这类一次性任务，格式漂移可以接受，优先保证编译通过；对于长期维护的代码生成工具，则应把注释映射与空行保留作为硬性验收项，
+        否则每次生成都会产生大量无关 diff。
+      </p>
+
+      <h3>静态扫描的阈值怎么定</h3>
+      <p>
+        基于语法树的扫描规则本身不难写，难的是阈值。以循环复杂度为例，同一套计数逻辑在不同项目上的合理阈值差异很大：
+        业务服务类通常在 10 以下，工具类与解析器实现往往超过 15 仍属正常。更稳妥的做法是先对全量代码做一次基线统计，
+        取分位数而不是绝对值——比如把前 10% 的方法标记为待复核，而不是统一以 10 为红线。
+      </p>
+      <div class="quote">
+        <p>真正有效的扫描规则，不是一次写出完美阈值，而是先跑全量基线，再用分位数圈出少数需要人工判断的位置。</p>
+        <cite>—— 来自 11-23 发布的 12 份开源项目实测报告结论</cite>
+      </div>
+    </section>
+
+    <!-- 6 体验指南 -->
+    <section id="guide" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>体验指南：内容消费顺序与判断依据</h2>
+          <div class="sub">从哪条开始看，怎么判断一条解析资料值不值得投入时间</div>
+        </div>
+      </div>
+      <ol class="steps">
+        <li>
+          <h4>先确认语法版本是否覆盖你的项目</h4>
+          <p>如果你的项目用了记录类、密封类或模式匹配 switch，优先看标注「JDK 21」的条目；低于该版本的解析器会直接抛语法错误，其他内容再详细也无意义。</p>
+        </li>
+        <li>
+          <h4>再从声明节点入门，而不是表达式</h4>
+          <p>声明节点结构稳定、访问器命名直观，适合建立对整棵树的空间感。建议顺序：CompilationUnit → ClassOrInterfaceDeclaration → MethodDeclaration → FieldDeclaration。</p>
+        </li>
+        <li>
+          <h4>然后判断是否需要符号求解</h4>
+          <p>如果只是想统计方法数量、注解分布、命名规范，纯语法解析足够；一旦涉及重载判定、泛型推断、跨文件引用，就必须配置 TypeSolver，否则结果不可信。</p>
+        </li>
+        <li>
+          <h4>最后比较重写方案，看注释与格式</h4>
+          <p>准备做代码生成或批量迁移时，重点比较三项：注释归属、空行保留、重写后能否编译。三项都过关的方案才适合进入长期工具链。</p>
+        </li>
+      </ol>
+      <div class="quote">
+        <p>判断一条解析资料是否值得投入时间，看它有没有给出具体的节点类型名、访问器名称和失败场景，而不只是概念描述。</p>
+        <cite>—— 社区共识，来自 11-20 的讨论串</cite>
+      </div>
+    </section>
+
+    <!-- 7 FAQ -->
+    <section id="faq" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>常见问题</h2>
+          <div class="sub">围绕节点类型、解析失败与版本差异的 6 个高频问题</div>
+        </div>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>语法树解析一般支持到哪个 JDK 版本？</summary>
+          <div class="ans">取决于解析器版本。当前主流的 3.26.2 已覆盖 JDK 21，包括记录类、密封类、模式匹配 switch 与记录模式。如果你的代码用到更新的预览特性，需要确认解析器的语言级别配置，否则会直接报语法错误，而不是降级解析。</div>
+        </details>
+        <details>
+          <summary>MethodDeclaration 和 MethodCallExpr 有什么区别？</summary>
+          <div class="ans"><code>MethodDeclaration</code> 是声明节点，描述方法本身的名称、参数类型、返回类型与可见性；<code>MethodCallExpr</code> 是表达式节点，描述一次调用，只包含实参表达式与调用作用域。判断重载归属必须用前者结合类型求解，后者只反映调用语法。</div>
+        </details>
+        <details>
+          <summary>第一次接触语法树，从哪个节点开始看比较好？</summary>
+          <div class="ans">建议从 <code>CompilationUnit</code> 开始，它对应一个完整的 Java 文件，能让你先建立"包声明—导入—类型声明"的整体框架；接着看 <code>MethodDeclaration</code>，它的访问器命名最直观，容易迁移到其他节点。</div>
+        </details>
+        <details>
+          <summary>为什么 Lambda 表达式解析后拿不到参数类型？</summary>
+          <div class="ans">Lambda 的参数类型是隐式的，必须依赖目标函数式接口反推。如果解析器没有加载对应接口的符号信息，就无法推断出具体类型。解决方式是配置完整的 TypeSolver，或者在分析时显式提供目标类型上下文。</div>
+        </details>
+        <details>
+          <summary>代码重写后注释跑位了，怎么处理？</summary>
+          <div class="ans">默认输出会重新格式化，注释需要建立归属映射才能跟随节点移动。检查两点：是否开启了注释归属配置；被修改的节点是否保留了原有注释引用。如果注释是行尾注释，建议在替换节点时显式把注释迁移到新节点上。</div>
+        </details>
+        <details>
+          <summary>静态扫描的复杂度阈值一般怎么定？</summary>
+          <div class="ans">不建议直接套用固定数值。先对项目全量代码跑一次基线统计，取分位数作为参考：例如把前 10% 的方法列为待复核，再结合业务类型调整。解析器实现类与业务服务类的合理区间差异很大，统一阈值会带来大量误报。</div>
+        </details>
+      </div>
+    </section>
+
+    <!-- 8 用户评论 -->
+    <section id="comments" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>社区评论</h2>
+          <div class="sub">来自 11 月以来的 14 条真实使用反馈</div>
+        </div>
+      </div>
+      <div class="cmt-grid">
+        <div class="cmt"><div class="who"><span class="av" style="background:#5ee0c0">陈</span><span class="nm">陈屿舟</span><span class="tm">今天 10:12</span></div><p>按 <b>TypeSolver</b> 那篇的挂载顺序改了一遍，原来跨模块类型解析失败的问题基本消失了，主要是之前漏挂了项目源码目录。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#3fb6f0">林</span><span class="nm">林砚清</span><span class="tm">今天 09:04</span></div><p><b>RecordDeclaration</b> 的隐式构造器展开讲得挺细，之前一直以为记录类没有构造器节点，查了半天才发现要单独取。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#f0a13f">赵</span><span class="nm">赵星野</span><span class="tm">11-24 22:31</span></div><p>复杂度阈值那段说得对，直接拿 10 当红线在我们项目误报太多，按分位数筛完只剩 30 多个方法需要人工看。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#ef6a6a">吴</span><span class="nm">吴桐雨</span><span class="tm">11-24 19:48</span></div><p><b>SwitchExpr</b> 的 guard 分支样例比较实用，但希望能补一个带 yield 嵌套的完整例子，现在这个只有单层。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#8ecbe9">周</span><span class="nm">周牧之</span><span class="tm">11-23 15:20</span></div><p>评论一下中性体验：内容挺全，但部分旧条目的 API 名称还是 3.24 的写法，建议统一标注适用的解析器版本。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#5ee0c0">郑</span><span class="nm">郑亦凡</span><span class="tm">11-23 11:07</span></div><p><b>PrettyPrinter</b> 注释跑位的问题困扰我一周，按注释归属映射配完之后行尾注释终于不漂了。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#3fb6f0">孙</span><span class="nm">孙泊言</span><span class="tm">11-22 20:39</span></div><p><b>VoidVisitorAdapter</b> 那个返回值语义图解很有用，之前重写 visit 返回了错误的值，整棵子树都没遍历到，排查了半天。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#f0a13f">韩</span><span class="nm">韩沐辰</span><span class="tm">11-21 16:55</span></div><p>做注解处理器迁移正好用上 <b>NodeList</b> 倒序删除的写法，边遍历边删真的会索引错位，踩过一次。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#ef6a6a">何</span><span class="nm">何知远</span><span class="tm">11-20 09:26</span></div><p>希望多一点<b>方法引用</b>和泛型擦除交叉的样例，现在这块还是要自己翻语言规范，条目里讲得比较浅。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#8ecbe9">冯</span><span class="nm">冯棠</span><span class="tm">11-18 21:14</span></div><p><b>LambdaExpr</b> 推断失败那段帮我定位到了问题，果然是没加载函数式接口的符号信息，补上 classpath 就好了。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#5ee0c0">沈</span><span class="nm">沈砚白</span><span class="tm">11-16 14:02</span></div><p>把 <b>CompilationUnit</b> 当入口理解整棵树，比一上来就看表达式节点清晰多了，推荐新手按这个顺序走。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#3fb6f0">许</span><span class="nm">许清和</span><span class="tm">11-13 10:41</span></div><p>循环复杂度报告里 12 个开源项目的实测数据挺有参考价值，尤其是解析器实现类普遍偏高的那部分。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#f0a13f">邓</span><span class="nm">邓允之</span><span class="tm">11-10 18:33</span></div><p>建议补充密封类 <b>permitted</b> 列表的读取方式，我一开始以为它和普通类型声明一样，结果单独成了节点。</p></div>
+        <div class="cmt"><div class="who"><span class="av" style="background:#ef6a6a">曹</span><span class="nm">曹行之</span><span class="tm">11-06 12:18</span></div><p>整体不错，就是部分条目的示例代码偏短，复杂嵌套的场景还是得自己动手试。给个 4 星。</p></div>
+      </div>
+    </section>
+
+    <!-- 9 相关资讯 -->
+    <section id="news" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>相关资讯</h2>
+          <div class="sub">解析器版本、扫描规则与迁移实践的最新动态</div>
+        </div>
+      </div>
+      <ul class="newslist">
+        <li>
+          <div class="nt"><img src="https://picsum.photos/seed/jp-news-3262/600/400" width="600" height="400" loading="lazy" alt="JavaParser 3.26.2 版本发布说明配图"></div>
+          <div>
+            <h4><a href="#latest">JavaParser 3.26.2 发布：语法覆盖扩展至 JDK 21 记录模式</a></h4>
+            <p class="nd">本次更新补齐了记录模式的解构语法，同时修正了模式匹配 switch 中 guard 条件的解析顺序问题，旧版本解析此类代码会抛异常。</p>
+            <div class="nm"><span>2026-11-15</span>解析器版本</div>
+          </div>
+        </li>
+        <li>
+          <div class="nt"><img src="https://picsum.photos/seed/jp-news-complex/600/400" width="600" height="400" loading="lazy" alt="循环复杂度扫描报告实测数据配图"></div>
+          <div>
+            <h4><a href="#rank">12 份开源项目循环复杂度实测报告公布，误报率集中在校验类</a></h4>
+            <p class="nd">报告统计了 186 个节点类型中与复杂度相关的 21 个，指出校验类方法的阈值应单独设定，统一红线会带来约 40% 的误报。</p>
+            <div class="nm"><span>2026-11-23</span>静态扫描</div>
+          </div>
+        </li>
+        <li>
+          <div class="nt"><img src="https://picsum.photos/seed/jp-news-migrate/600/400" width="600" height="400" loading="lazy" alt="注解处理器迁移脚本样例集配图"></div>
+          <div>
+            <h4><a href="#deep">基于语法树重写的注解处理器迁移脚本样例集上线</a></h4>
+            <p class="nd">8 个脚本覆盖包名替换、API 升级与废弃注解清理三类场景，其中 3 个使用 NodeList 批量替换，附带回滚说明。</p>
+            <div class="nm"><span>2026-11-08</span>版本迁移</div>
+          </div>
+        </li>
+        <li>
+          <div class="nt"><img src="https://picsum.photos/seed/jp-news-lambda/600/400" width="600" height="400" loading="lazy" alt="Lambda 类型推断失败讨论串配图"></div>
+          <div>
+            <h4><a href="#faq">社区讨论焦点：Lambda 类型推断在无 classpath 时如何降级</a></h4>
+            <p class="nd">讨论集中在两种方案：手动提供目标类型上下文，或挂载最小化的函数式接口符号集。多数回复倾向于后者，因为可复用性更好。</p>
+            <div class="nm"><span>2026-11-20</span>符号求解</div>
+          </div>
+        </li>
+        <li>
+          <div class="nt"><img src="https://picsum.photos/seed/jp-news-naming/600/400" width="600" height="400" loading="lazy" alt="命名规范检查器榜单配图"></div>
+          <div>
+            <h4><a href="#rank">命名规范检查器榜单更新，字段声明节点违规率最高</a></h4>
+            <p class="nd">依据 186 个节点类型的统计显示，FieldDeclaration 的命名违规占比达到 27%，主要集中在常量与布尔字段两类。</p>
+            <div class="nm"><span>2026-11-02</span>静态扫描</div>
+          </div>
+        </li>
+        <li>
+          <div class="nt"><img src="https://picsum.photos/seed/jp-news-sealed/600/400" width="600" height="400" loading="lazy" alt="密封类 permitted 列表解析讨论配图"></div>
+          <div>
+            <h4><a href="#latest">密封类 permitted 列表解析方式引发讨论，两种读法各有取舍</a></h4>
+            <p class="nd">一种读法直接取节点上的类型列表，另一种走符号求解后比较子类型。前者快但可能漏掉跨文件声明，后者准确但开销明显更高。</p>
+            <div class="nm"><span>2026-11-10</span>声明节点</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 10 相关推荐 -->
+    <section id="related" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>相关推荐</h2>
+          <div class="sub">延伸方向与具体条目索引</div>
+        </div>
+      </div>
+      <div class="tagindex">
+        <a href="#deep"><b>泛型擦除</b>与类型变量追溯</a>
+        <a href="#faq">方法重载判定</a>
+        <a href="#featured"><b>注解处理器</b>生成代码</a>
+        <a href="#deep">注释归属映射</a>
+        <a href="#guide"><b>GenericVisitorAdapter</b> 短路遍历</a>
+        <a href="#latest">密封类 permitted 列表</a>
+        <a href="#news"><b>废弃 API</b>批量替换脚本</a>
+        <a href="#faq">空指针风险静态检测</a>
+      </div>
+    </section>
+
+    <!-- 11 补充板块：热榜 + 时间线 -->
+    <section id="rank" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>条目热度榜</h2>
+          <div class="sub">按近 30 天访问与收藏加权统计（截至 2026-11-25）</div>
+        </div>
+      </div>
+      <div class="rankbar">
+        <div class="row"><span class="n">1</span><a class="nm" href="#featured">CompilationUnit 编译单元解析</a><span class="bar"><i style="width:96%"></i></span></div>
+        <div class="row"><span class="n">2</span><a class="nm" href="#featured">MethodDeclaration 方法声明节点</a><span class="bar"><i style="width:92%"></i></span></div>
+        <div class="row"><span class="n">3</span><a class="nm" href="#featured">LambdaExpr 与函数式接口推断</a><span class="bar"><i style="width:88%"></i></span></div>
+        <div class="row"><span class="n">4</span><a class="nm" href="#latest">RecordDeclaration 记录声明解析</a><span class="bar"><i style="width:83%"></i></span></div>
+        <div class="row"><span class="n">5</span><a class="nm" href="#deep">TypeSolver 类型求解配置</a><span class="bar"><i style="width:79%"></i></span></div>
+        <div class="row"><span class="n">6</span><a class="nm" href="#deep">PrettyPrinter 代码重写输出</a><span class="bar"><i style="width:71%"></i></span></div>
+        <div class="row"><span class="n">7</span><a class="nm" href="#featured">SwitchExpr 模式匹配分支</a><span class="bar"><i style="width:64%"></i></span></div>
+        <div class="row"><span class="n">8</span><a class="nm" href="#guide">VoidVisitorAdapter 遍历骨架</a><span class="bar"><i style="width:57%"></i></span></div>
+      </div>
+    </section>
+
+    <section id="timeline" class="panel">
+      <div class="sec-head">
+        <div>
+          <h2>解析器版本时间线</h2>
+          <div class="sub">近一年内影响语法覆盖的关键节点</div>
+        </div>
+      </div>
+      <ul class="timeline">
+        <li><time>2026-11-15</time><b>3.26.2 发布</b><span>记录模式解构语法支持，修正 guard 条件解析顺序。</span></li>
+        <li><time>2026-09-27</time><b>3.26.0 发布</b><span>模式匹配 switch 完整语法树结构定型，新增 PatternExpr 节点。</span></li>
+        <li><time>2026-07-18</time><b>3.25.8 发布</b><span>密封类 permitted 列表改为独立节点，旧写法需迁移。</span></li>
+        <li><time>2026-04-30</time><b>3.25.5 发布</b><span>注释归属映射默认开启，重写输出格式变化较大。</span></li>
+        <li><time>2026-01-12</time><b>3.25.0 发布</b><span>记录类声明支持完善，隐式成员展开逻辑稳定。</span></li>
+      </ul>
+    </section>
+
+  </div><!-- /main-col -->
+
+  <!-- 右辅助栏 -->
+  <aside class="side-r" aria-label="辅助信息">
+    <div class="side-card">
+      <h3>今日更新</h3>
+      <ul class="hotlist">
+        <li><span class="rank">1</span><div><a href="#featured">RecordDeclaration 记录声明解析</a><span class="meta">新增 · 6 个字段样例</span></div></li>
+        <li><span class="rank">2</span><div><a href="#deep">TypeSolver 类型求解配置</a><span class="meta">修订 · 修正 3 处 API</span></div></li>
+        <li><span class="rank">3</span><div><a href="#featured">SwitchExpr 模式匹配分支</a><span class="meta">新增 · guard 条件</span></div></li>
+        <li><span class="rank">4</span><div><a href="#rank">循环复杂度扫描报告</a><span class="meta">新增 · 12 份实测</span></div></li>
+        <li><span class="rank">5</span><div><a href="#faq">Lambda 类型推断失败</a><span class="meta">问答更新</span></div></li>
+      </ul>
+    </div>
+    <div class="side-card">
+      <h3>热门节点类型</h3>
+      <ul class="hotlist">
+        <li><span class="rank">01</span><div><a href="#featured">CompilationUnit</a><span class="meta">根节点 · 9.6</span></div></li>
+        <li><span class="rank">02</span><div><a href="#featured">MethodDeclaration</a><span class="meta">声明 · 9.4</span></div></li>
+        <li><span class="rank">03</span><div><a href="#featured">LambdaExpr</a><span class="meta">表达式 · 9.1</span></div></li>
+        <li><span class="rank">04</span><div><a href="#latest">RecordDeclaration</a><span class="meta">声明 · 8.9</span></div></li>
+        <li><span class="rank">05</span><div><a href="#deep">TypeSolver</a><span class="meta">求解 · 8.4</span></div></li>
+        <li><span class="rank">06</span><div><a href="#deep">PrettyPrinter</a><span class="meta">生成 · 8.7</span></div></li>
+      </ul>
+    </div>
+    <div class="side-card">
+      <h3>快捷索引</h3>
+      <ul class="hotlist">
+        <li><span class="rank">·</span><div><a href="#cats">8 个分类入口</a></div></li>
+        <li><span class="rank">·</span><div><a href="#faq">6 条常见问题</a></div></li>
+        <li><span class="rank">·</span><div><a href="#timeline">版本时间线</a></div></li>
+        <li><span class="rank">·</span><div><a href="#news">6 条相关资讯</a></div></li>
+      </ul>
+    </div>
+  </aside>
+
+</div><!-- /layout -->
+</div><!-- /wrap -->
+</main>
+
+<!-- 页尾 -->
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="brand">
+          <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="1" y="1" width="30" height="30" rx="8" fill="#131a25" stroke="#3fb6f0" stroke-width="1.4"/>
+            <path d="M11 9.5 L6.5 16 L11 22.5" fill="none" stroke="#3fb6f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 9.5 L25.5 16 L21 22.5" fill="none" stroke="#5ee0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="16" cy="16" r="2.4" fill="#5ee0c0"/>
+          </svg>
+          <span class="brand-txt">javaparser<span>高清</span></span>
+        </div>
+        <p>面向前后端开发者与代码审查人员的 Java 源码解析资料库，收录 AST 节点类型、符号求解配置、代码重写与静态扫描的对照条目。</p>
+      </div>
+      <div class="foot-col">
+        <h4>解析方向</h4>
+        <a href="#featured">声明节点解析</a>
+        <a href="#featured">表达式解析</a>
+        <a href="#featured">控制流结构</a>
+        <a href="#deep">符号求解</a>
+      </div>
+      <div class="foot-col">
+        <h4>实践内容</h4>
+        <a href="#guide">访问者遍历</a>
+        <a href="#deep">代码生成与重写</a>
+        <a href="#news">静态扫描规则</a>
+        <a href="#news">版本迁移脚本</a>
+      </div>
+      <div class="foot-col">
+        <h4>社区</h4>
+        <a href="#comments">用户评论</a>
+        <a href="#faq">常见问题</a>
+        <a href="#rank">条目热度榜</a>
+        <a href="#timeline">版本时间线</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <p>条目内容与示例均为整理与演示用途，实际 API 名称请以所用解析器版本文档为准。页面文字与数据截至 2026 年 11 月 25 日。</p>
+      <p>© 2026 javaparser高清 · 内容索引站点</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // 移动端菜单
+  var menuBtn = document.getElementById('menuBtn');
+  var drawer = document.getElementById('drawer');
+  if(menuBtn && drawer){
+    menuBtn.addEventListener('click', function(){
+      var open = drawer.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    drawer.addEventListener('click', function(e){
+      if(e.target.tagName === 'A'){
+        drawer.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded','false');
+      }
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && drawer.classList.contains('open')){
+        drawer.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded','false');
+        menuBtn.focus();
+      }
+    });
+  }
+
+  // 站内搜索：筛精选卡片
+  var input = document.getElementById('siteSearch');
+  var cards = Array.prototype.slice.call(document.querySelectorAll('#cardGrid .ecard'));
+  var noResult = document.getElementById('noResult');
+  if(input){
+    input.addEventListener('input', function(){
+      var q = input.value.trim().toLowerCase();
+      var hit = 0;
+      cards.forEach(function(c){
+        var text = (c.getAttribute('data-kw') || '') + ' ' + c.textContent;
+        var ok = q === '' || text.toLowerCase().indexOf(q) > -1;
+        c.classList.toggle('hidden', !ok);
+        if(ok) hit++;
+      });
+      if(noResult) noResult.classList.toggle('show', hit === 0);
+    });
+  }
+})();
+</script>
+</body>
+                                                               </html>
